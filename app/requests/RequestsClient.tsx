@@ -26,13 +26,21 @@ interface Request {
 export default function RequestsClient({ requests }: { requests: Request[] }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('newest')
+
+  const categories = ['all', ...Array.from(new Set(requests.map(r => r.it_products?.category).filter(Boolean)))]
 
   let filteredRequests = [...requests]
 
   // Status filter
   if (statusFilter !== 'all') {
     filteredRequests = filteredRequests.filter(r => r.status === statusFilter)
+  }
+
+  // Category filter
+  if (categoryFilter !== 'all') {
+    filteredRequests = filteredRequests.filter(r => r.it_products?.category === categoryFilter)
   }
 
   // Search filter
@@ -66,7 +74,20 @@ export default function RequestsClient({ requests }: { requests: Request[] }) {
               className="w-full"
             />
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.filter(c => c !== 'all').map(category => (
+                  <SelectItem key={category} value={category as string}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
@@ -97,11 +118,12 @@ export default function RequestsClient({ requests }: { requests: Request[] }) {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''} found
           </p>
-          {(searchQuery || statusFilter !== 'all') && (
+          {(searchQuery || statusFilter !== 'all' || categoryFilter !== 'all') && (
             <button
               onClick={() => {
                 setSearchQuery('')
                 setStatusFilter('all')
+                setCategoryFilter('all')
               }}
               className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
             >
@@ -130,6 +152,7 @@ export default function RequestsClient({ requests }: { requests: Request[] }) {
               onClick={() => {
                 setSearchQuery('')
                 setStatusFilter('all')
+                setCategoryFilter('all')
               }}
               className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
             >
