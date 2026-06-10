@@ -34,6 +34,8 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
 
   // Set up real-time subscription
   useEffect(() => {
+    console.log('🔄 Setting up real-time subscription for it_products...')
+
     const channel = supabase
       .channel('catalog-changes')
       .on(
@@ -44,8 +46,11 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
           table: 'it_products'
         },
         (payload) => {
+          console.log('📡 Real-time event received:', payload)
+
           if (payload.eventType === 'UPDATE') {
             const updatedProduct = payload.new as Product
+            console.log('✏️ Product updated:', updatedProduct)
             setProducts(prev =>
               prev.map(p => p.id === updatedProduct.id ? updatedProduct : p)
             )
@@ -61,6 +66,7 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
             }, 5000)
           } else if (payload.eventType === 'INSERT') {
             const newProduct = payload.new as Product
+            console.log('➕ Product added:', newProduct)
             setProducts(prev => [...prev, newProduct])
             setUpdatedProducts(prev => new Set(prev).add(newProduct.id))
             setTimeout(() => {
@@ -71,13 +77,17 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
               })
             }, 5000)
           } else if (payload.eventType === 'DELETE') {
+            console.log('🗑️ Product deleted:', payload.old)
             setProducts(prev => prev.filter(p => p.id !== payload.old.id))
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('📊 Subscription status:', status)
+      })
 
     return () => {
+      console.log('🔌 Cleaning up real-time subscription')
       supabase.removeChannel(channel)
     }
   }, [supabase])
