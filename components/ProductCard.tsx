@@ -50,8 +50,6 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
       setIsSubmitting(false)
     }
   }
-    }
-  }
 
   return (
     <>
