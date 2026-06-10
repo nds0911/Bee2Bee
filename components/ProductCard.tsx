@@ -86,50 +86,106 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
       </Card>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Request {product.name}</DialogTitle>
-            <DialogDescription>
-              Fill out the details for your purchase request
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-2xl font-bold">Request Equipment</DialogTitle>
+            <DialogDescription className="text-base">
+              Let's get you set up with {product.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+
+          {/* Product Preview */}
+          <div className="flex items-center gap-4 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-100">
+            {product.image_url && (
+              <div className="relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 shadow-sm">
+                <Image
+                  src={product.image_url}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">{product.name}</h3>
+              <p className="text-sm text-gray-600">{product.category}</p>
+              <p className="text-lg font-bold text-indigo-600 mt-1">${product.price.toLocaleString()} each</p>
+            </div>
+          </div>
+
+          <div className="space-y-5 py-2">
+            {/* Quantity */}
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
+              <Label htmlFor="quantity" className="text-base font-semibold text-gray-700">
+                How many do you need?
+              </Label>
               <Input
                 id="quantity"
                 type="number"
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                className="text-lg h-12"
               />
             </div>
+
+            {/* Justification */}
             <div className="space-y-2">
-              <Label htmlFor="justification">Justification (min 20 characters)</Label>
+              <Label htmlFor="justification" className="text-base font-semibold text-gray-700">
+                Why do you need this? 💬
+              </Label>
               <Textarea
                 id="justification"
-                placeholder="Explain why you need this equipment..."
+                placeholder="Share your reason (e.g., 'My current laptop is 5 years old and can't handle the new dev tools we're using...')"
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
                 rows={4}
+                className="resize-none"
               />
-              <p className="text-xs text-gray-500">
-                {justification.length}/20 characters
-              </p>
+              <div className="flex items-center justify-between">
+                <p className={`text-xs ${justification.length >= 20 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                  {justification.length >= 20 ? '✓ Great! You're good to go' : `${justification.length}/20 characters minimum`}
+                </p>
+              </div>
             </div>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="text-sm font-semibold">Total Cost</p>
-              <p className="text-xl font-bold text-indigo-600">
-                ${(product.price * quantity).toLocaleString()}
-              </p>
+
+            {/* Total Cost Display */}
+            <div className="bg-gradient-to-br from-indigo-600 to-blue-600 text-white p-4 rounded-lg shadow-md">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Total Request Cost</p>
+                  <p className="text-3xl font-bold mt-1">
+                    ${(product.price * quantity).toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-right opacity-90">
+                  <p className="text-xs">{quantity} × ${product.price.toLocaleString()}</p>
+                </div>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={isSubmitting}
+              className="flex-1 sm:flex-none"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Submit Request'}
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || justification.length < 20}
+              className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="animate-pulse">Submitting...</span>
+                </>
+              ) : (
+                'Submit Request 🚀'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
