@@ -144,7 +144,7 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
               />
               <div className="flex items-center justify-between">
                 <p className={`text-xs ${justification.length >= 20 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                  {justification.length >= 20 ? '✓ Great! You're good to go' : `${justification.length}/20 characters minimum`}
+                  {justification.length >= 20 ? "✓ Great! You're good to go" : `${justification.length}/20 characters minimum`}
                 </p>
               </div>
             </div>
