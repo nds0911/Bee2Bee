@@ -179,7 +179,7 @@ export default function UserManagementClient({ users }: UserManagementClientProp
               <Label htmlFor="role">Role *</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                onValueChange={(value) => setFormData({ ...formData, role: value || 'employee' })}
               >
                 <SelectTrigger>
                   <SelectValue />
