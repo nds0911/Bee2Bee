@@ -24,11 +24,11 @@ export default function LoginPage() {
   }, [supabase, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950 p-4">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bee2Bee</h1>
-          <p className="text-gray-600">IT Procurement Portal</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Bee2Bee</h1>
+          <p className="text-gray-600 dark:text-gray-300">IT Procurement Portal</p>
         </div>
         <Auth
           supabaseClient={supabase}
@@ -36,12 +36,12 @@ export default function LoginPage() {
           providers={[]}
           redirectTo={`${window.location.origin}/api/auth/callback`}
         />
-        <div className="mt-6 p-4 bg-blue-50 rounded-md">
-          <p className="text-sm text-gray-700 font-semibold mb-2">Test Accounts:</p>
-          <div className="text-xs text-gray-600 space-y-1">
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-md">
+          <p className="text-sm text-gray-700 dark:text-gray-200 font-semibold mb-2">Test Accounts:</p>
+          <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
             <p><strong>Employee:</strong> employee@test.com</p>
             <p><strong>Manager:</strong> manager@test.com</p>
-            <p className="text-gray-500 italic">Password: Test123456!</p>
+            <p className="text-gray-500 dark:text-gray-400 italic">Password: Test123456!</p>
           </div>
         </div>
       </div>
