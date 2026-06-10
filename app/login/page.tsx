@@ -40,6 +40,8 @@ export default function LoginPage() {
           appearance={{ theme: ThemeSupa }}
           providers={[]}
           redirectTo={origin ? `${origin}/api/auth/callback` : undefined}
+          view="sign_in"
+          showLinks={false}
         />
         <div className="mt-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-md">
           <p className="text-sm text-gray-700 dark:text-gray-200 font-semibold mb-2">Test Accounts:</p>
