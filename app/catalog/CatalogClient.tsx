@@ -32,9 +32,12 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
   const supabase = createClient()
   const router = useRouter()
 
-  // Set up real-time subscription
+  // Set up real-time subscription with polling fallback
   useEffect(() => {
     console.log('🔄 Setting up real-time subscription for it_products...')
+
+    let pollInterval: NodeJS.Timeout | null = null
+    let isSubscribed = false
 
     const channel = supabase
       .channel('catalog-changes')
@@ -84,10 +87,61 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
       )
       .subscribe((status) => {
         console.log('📊 Subscription status:', status)
+
+        if (status === 'SUBSCRIBED') {
+          isSubscribed = true
+          console.log('✅ Real-time enabled!')
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          // Real-time failed, fall back to polling
+          if (!isSubscribed && !pollInterval) {
+            console.log('⚠️ Real-time unavailable, using polling fallback (checking every 5 seconds)')
+
+            pollInterval = setInterval(async () => {
+              console.log('🔄 Polling for product updates...')
+              const { data: latestProducts } = await supabase
+                .from('it_products')
+                .select('*')
+                .eq('in_stock', true)
+                .order('category', { ascending: true })
+
+              if (latestProducts) {
+                setProducts(prevProducts => {
+                  // Check for changes
+                  const changedProducts = latestProducts.filter(latest => {
+                    const prev = prevProducts.find(p => p.id === latest.id)
+                    return prev && (
+                      prev.price !== latest.price ||
+                      prev.name !== latest.name ||
+                      prev.in_stock !== latest.in_stock
+                    )
+                  })
+
+                  // Mark changed products
+                  changedProducts.forEach(changed => {
+                    console.log('🔄 Product changed via polling:', changed)
+                    setUpdatedProducts(prev => new Set(prev).add(changed.id))
+                    setTimeout(() => {
+                      setUpdatedProducts(prev => {
+                        const next = new Set(prev)
+                        next.delete(changed.id)
+                        return next
+                      })
+                    }, 5000)
+                  })
+
+                  return latestProducts
+                })
+              }
+            }, 5000) // Poll every 5 seconds
+          }
+        }
       })
 
     return () => {
       console.log('🔌 Cleaning up real-time subscription')
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
       supabase.removeChannel(channel)
     }
   }, [supabase])
