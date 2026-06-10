@@ -63,12 +63,20 @@ export default function Navbar() {
                 </Link>
               )}
               {role === 'manager' && (
-                <Link
-                  href="/approvals"
-                  className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Approvals
-                </Link>
+                <>
+                  <Link
+                    href="/approvals"
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Approvals
+                  </Link>
+                  <Link
+                    href="/manage-catalog"
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Manage Catalog
+                  </Link>
+                </>
               )}
             </div>
           </div>
