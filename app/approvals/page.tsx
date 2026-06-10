@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
-import ApprovalCard from '@/components/ApprovalCard'
+import ApprovalsClient from './ApprovalsClient'
 import { redirect } from 'next/navigation'
 
 export default async function ApprovalsPage() {
@@ -46,18 +46,7 @@ export default async function ApprovalsPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Pending Approvals</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">Review and approve purchase requests from your team</p>
           </div>
-
-          {!requests || requests.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-gray-500">No pending requests at this time</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {requests.map(request => (
-                <ApprovalCard key={request.id} request={request} />
-              ))}
-            </div>
-          )}
+          <ApprovalsClient requests={requests || []} />
         </div>
       </div>
     </>

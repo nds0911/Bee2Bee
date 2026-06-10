@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
-import RequestCard from '@/components/RequestCard'
+import RequestsClient from './RequestsClient'
 
 export default async function RequestsPage() {
   const supabase = await createClient()
@@ -34,21 +34,7 @@ export default async function RequestsPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Requests</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2">Track the status of your purchase requests</p>
           </div>
-
-          {!requests || requests.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-gray-500">You haven't made any requests yet</p>
-              <a href="/catalog" className="text-indigo-600 hover:text-indigo-700 mt-2 inline-block">
-                Browse the catalog
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {requests.map(request => (
-                <RequestCard key={request.id} request={request} />
-              ))}
-            </div>
-          )}
+          <RequestsClient requests={requests || []} />
         </div>
       </div>
     </>
