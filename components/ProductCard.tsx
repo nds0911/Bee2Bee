@@ -30,10 +30,10 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1)
   const [justification, setJustification] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const handleSubmit = async () => {
     if (quantity < 1 || justification.length < 20) {
-      alert('Please enter a valid quantity and justification (min 20 characters)')
       return
     }
 
@@ -41,6 +41,10 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
     try {
       await onRequest(product, quantity, justification)
       setIsOpen(false)
+      setShowSuccess(true)
+      setTimeout(() => {
+        setShowSuccess(false)
+      }, 2500)
       setQuantity(1)
       setJustification('')
     } catch (error) {
@@ -188,6 +192,21 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center pt-4">
+              🎉 Request Submitted!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-6 space-y-3">
+            <p className="text-lg">Your request for <strong>{product.name}</strong> has been sent to your manager for approval.</p>
+            <p className="text-sm text-gray-600">You can track the status in "My Requests"</p>
+          </div>
         </DialogContent>
       </Dialog>
     </>
