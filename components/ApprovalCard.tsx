@@ -177,23 +177,42 @@ export default function ApprovalCard({ request }: ApprovalCardProps) {
             </p>
           </div>
         </CardContent>
-        <CardFooter className="flex gap-3 bg-gray-50 pt-6">
-          <Button
-            onClick={() => handleDecisionClick('rejected')}
-            variant="outline"
-            className="flex-1 border-2 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 font-semibold h-12"
-            disabled={isProcessing}
-          >
-            ❌ Reject
-          </Button>
-          <Button
-            onClick={() => handleDecisionClick('approved')}
-            className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 font-semibold h-12 shadow-md"
-            disabled={isProcessing}
-          >
-            ✅ Approve
-          </Button>
-        </CardFooter>
+        {request.status === 'pending' ? (
+          <CardFooter className="flex gap-3 bg-gray-50 pt-6">
+            <Button
+              onClick={() => handleDecisionClick('rejected')}
+              variant="outline"
+              className="flex-1 border-2 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 font-semibold h-12"
+              disabled={isProcessing}
+            >
+              ❌ Reject
+            </Button>
+            <Button
+              onClick={() => handleDecisionClick('approved')}
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 font-semibold h-12 shadow-md"
+              disabled={isProcessing}
+            >
+              ✅ Approve
+            </Button>
+          </CardFooter>
+        ) : (
+          <CardFooter className="bg-gray-50 pt-4">
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-700">Status:</p>
+                <Badge variant={request.status === 'approved' ? 'default' : 'destructive'} className="text-sm">
+                  {request.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
+                </Badge>
+              </div>
+              {request.manager_comment && (
+                <div className="pt-2 border-t">
+                  <p className="text-sm font-semibold text-gray-700 mb-1">Manager Comment:</p>
+                  <p className="text-sm text-gray-600 italic">&quot;{request.manager_comment}&quot;</p>
+                </div>
+              )}
+            </div>
+          </CardFooter>
+        )}
       </Card>
 
       {/* Confirmation Dialog */}

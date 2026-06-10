@@ -30,8 +30,29 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
   const [priceFilter, setPriceFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('name')
   const [updatedProducts, setUpdatedProducts] = useState<Set<string>>(new Set())
+  const [pendingProductIds, setPendingProductIds] = useState<Set<string>>(new Set())
   const supabase = createClient()
   const router = useRouter()
+
+  // Fetch user's pending requests
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: pendingRequests } = await supabase
+        .from('purchase_requests')
+        .select('product_id')
+        .eq('requester_id', user.id)
+        .eq('status', 'pending')
+
+      if (pendingRequests) {
+        setPendingProductIds(new Set(pendingRequests.map(r => r.product_id)))
+      }
+    }
+
+    fetchPendingRequests()
+  }, [supabase])
 
   // Set up real-time subscription with polling fallback
   useEffect(() => {
@@ -242,6 +263,24 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { success: false, error: 'Not authenticated' }
 
+    // Check if user already has a pending request for this product
+    const { data: existingRequest, error: existingError } = await supabase
+      .from('purchase_requests')
+      .select('id, status')
+      .eq('product_id', product.id)
+      .eq('requester_id', user.id)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (existingError) {
+      console.error('Error checking existing requests:', existingError)
+      return { success: false, error: 'Failed to check existing requests.' }
+    }
+
+    if (existingRequest) {
+      return { success: false, error: 'You already have a pending request for this product. Please wait for it to be reviewed before submitting another.' }
+    }
+
     // Check if product still exists before submitting
     const { data: productCheck, error: checkError } = await supabase
       .from('it_products')
@@ -270,6 +309,9 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
       console.error('Error creating request:', error)
       return { success: false, error: 'Failed to submit request. Please try again.' }
     }
+
+    // Add product to pending list
+    setPendingProductIds(prev => new Set(prev).add(product.id))
 
     return { success: true }
   }
@@ -382,6 +424,7 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
               product={product}
               onRequest={handleRequest}
               isUpdated={updatedProducts.has(product.id)}
+              hasPendingRequest={pendingProductIds.has(product.id)}
             />
           ))}
         </div>

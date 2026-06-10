@@ -26,11 +26,17 @@ interface Request {
 export default function ApprovalsClient({ requests }: { requests: Request[] }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<string>('oldest')
+  const [statusFilter, setStatusFilter] = useState<string>('pending')
+  const [sortBy, setSortBy] = useState<string>('newest')
 
   const categories = ['all', ...Array.from(new Set(requests.map(r => r.it_products?.category).filter(Boolean)))]
 
   let filteredRequests = [...requests]
+
+  // Status filter
+  if (statusFilter !== 'all') {
+    filteredRequests = filteredRequests.filter(r => r.status === statusFilter)
+  }
 
   // Category filter
   if (categoryFilter !== 'all') {
@@ -56,8 +62,28 @@ export default function ApprovalsClient({ requests }: { requests: Request[] }) {
     return 0
   })
 
+  const pendingCount = requests.filter(r => r.status === 'pending').length
+  const approvedCount = requests.filter(r => r.status === 'approved').length
+  const rejectedCount = requests.filter(r => r.status === 'rejected').length
+
   return (
     <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">Pending</p>
+          <p className="text-3xl font-bold text-yellow-900 dark:text-yellow-100">{pendingCount}</p>
+        </div>
+        <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-4">
+          <p className="text-sm text-green-800 dark:text-green-200 font-medium">Approved</p>
+          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{approvedCount}</p>
+        </div>
+        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-sm text-red-800 dark:text-red-200 font-medium">Rejected</p>
+          <p className="text-3xl font-bold text-red-900 dark:text-red-100">{rejectedCount}</p>
+        </div>
+      </div>
+
       {/* Search and Filters */}
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -71,6 +97,17 @@ export default function ApprovalsClient({ requests }: { requests: Request[] }) {
             />
           </div>
           <div className="flex gap-3">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending ({pendingCount})</SelectItem>
+                <SelectItem value="approved">Approved ({approvedCount})</SelectItem>
+                <SelectItem value="rejected">Rejected ({rejectedCount})</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Category" />
@@ -101,13 +138,14 @@ export default function ApprovalsClient({ requests }: { requests: Request[] }) {
         {/* Results count */}
         <div className="flex justify-between items-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {filteredRequests.length} pending request{filteredRequests.length !== 1 ? 's' : ''}
+            {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''} found
           </p>
-          {(searchQuery || categoryFilter !== 'all') && (
+          {(searchQuery || categoryFilter !== 'all' || statusFilter !== 'pending') && (
             <button
               onClick={() => {
                 setSearchQuery('')
                 setCategoryFilter('all')
+                setStatusFilter('pending')
               }}
               className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
             >

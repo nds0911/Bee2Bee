@@ -24,9 +24,10 @@ interface ProductCardProps {
   product: Product
   onRequest: (product: Product, quantity: number, justification: string) => Promise<{ success: boolean; error?: string }>
   isUpdated?: boolean
+  hasPendingRequest?: boolean
 }
 
-export default function ProductCard({ product, onRequest, isUpdated = false }: ProductCardProps) {
+export default function ProductCard({ product, onRequest, isUpdated = false, hasPendingRequest = false }: ProductCardProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const [justification, setJustification] = useState('')
@@ -145,9 +146,9 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
           <Button
             onClick={() => setIsOpen(true)}
             className="w-full"
-            disabled={!product.in_stock}
+            disabled={!product.in_stock || hasPendingRequest}
           >
-            {product.in_stock ? 'Request' : 'Out of Stock'}
+            {!product.in_stock ? 'Out of Stock' : hasPendingRequest ? '⏳ Pending Request' : 'Request'}
           </Button>
         </CardFooter>
       </Card>
