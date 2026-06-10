@@ -97,7 +97,7 @@ export default function ApprovalsClient({ requests }: { requests: Request[] }) {
             />
           </div>
           <div className="flex gap-3">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value || 'pending')}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -108,7 +108,7 @@ export default function ApprovalsClient({ requests }: { requests: Request[] }) {
                 <SelectItem value="rejected">Rejected ({rejectedCount})</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value || 'all')}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -121,7 +121,7 @@ export default function ApprovalsClient({ requests }: { requests: Request[] }) {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value || 'newest')}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
