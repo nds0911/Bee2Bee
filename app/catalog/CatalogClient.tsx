@@ -172,6 +172,24 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
 
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))]
 
+  const refreshProducts = async () => {
+    console.log('🔄 Manual refresh triggered')
+    const { data: latestProducts, error } = await supabase
+      .from('it_products')
+      .select('*')
+      .order('category', { ascending: true })
+
+    if (error) {
+      console.error('❌ Refresh error:', error)
+      return
+    }
+
+    if (latestProducts) {
+      console.log('✅ Refreshed products:', latestProducts.length)
+      setProducts(latestProducts)
+    }
+  }
+
   // Apply all filters
   let filteredProducts = products
 
@@ -245,6 +263,13 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
             />
           </div>
           <div className="flex gap-3">
+            <Button
+              onClick={refreshProducts}
+              variant="outline"
+              className="whitespace-nowrap"
+            >
+              🔄 Refresh
+            </Button>
             <Select value={priceFilter} onValueChange={setPriceFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Price Range" />
