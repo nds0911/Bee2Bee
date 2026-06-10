@@ -22,7 +22,7 @@ interface Product {
 
 interface ProductCardProps {
   product: Product
-  onRequest: (product: Product, quantity: number, justification: string) => Promise<void>
+  onRequest: (product: Product, quantity: number, justification: string) => Promise<{ success: boolean; error?: string }>
   isUpdated?: boolean
 }
 
@@ -33,15 +33,32 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [initialPrice, setInitialPrice] = useState(product.price)
+  const [initialStock, setInitialStock] = useState(product.in_stock)
   const [priceChanged, setPriceChanged] = useState(false)
+  const [stockChanged, setStockChanged] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Track when modal opens and detect price changes
+  // Calculate max quantity based on price
+  const getMaxQuantity = (price: number) => {
+    if (price < 100) return 50        // Cheap items: max 50
+    if (price < 500) return 25        // Accessories: max 25
+    if (price < 1000) return 10       // Mid-range: max 10
+    if (price < 2000) return 5        // Expensive: max 5
+    return 3                          // Premium items: max 3
+  }
+
+  const maxQuantity = getMaxQuantity(product.price)
+
+  // Track when modal opens and detect changes
   useEffect(() => {
     if (isOpen) {
       setInitialPrice(product.price)
+      setInitialStock(product.in_stock)
       setPriceChanged(false)
+      setStockChanged(false)
+      setErrorMessage(null)
     }
-  }, [isOpen, product.price])
+  }, [isOpen]) // Remove product.price and product.in_stock from dependencies
 
   // Detect price change while modal is open
   useEffect(() => {
@@ -50,24 +67,38 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
     }
   }, [product.price, initialPrice, isOpen])
 
+  // Detect stock change while modal is open
+  useEffect(() => {
+    if (isOpen && initialStock && !product.in_stock) {
+      setStockChanged(true)
+    }
+  }, [product.in_stock, initialStock, isOpen])
+
   const handleSubmit = async () => {
     if (quantity < 1 || justification.length < 20) {
       return
     }
 
-    // Warn if price changed
-    if (priceChanged) {
-      const confirmed = confirm(
-        `⚠️ Price Update Alert!\n\nThe price has changed from $${initialPrice.toLocaleString()} to $${product.price.toLocaleString()}.\n\nNew total: $${(product.price * quantity).toLocaleString()}\n\nDo you want to proceed with the updated price?`
-      )
-      if (!confirmed) {
-        return
-      }
+    // Validate quantity doesn't exceed maximum
+    if (quantity > maxQuantity) {
+      setQuantity(maxQuantity)
+      return
     }
 
+    // Block if out of stock - UI already shows this with the banner and disabled button
+    if (stockChanged || !product.in_stock) {
+      return
+    }
+
+    // If price changed, the UI already shows the yellow banner
+    // User is aware and can proceed
+
     setIsSubmitting(true)
-    try {
-      await onRequest(product, quantity, justification)
+    setErrorMessage(null) // Clear any previous errors
+
+    const result = await onRequest(product, quantity, justification)
+
+    if (result.success) {
       setIsOpen(false)
       setShowSuccess(true)
       setTimeout(() => {
@@ -75,24 +106,23 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
       }, 2500)
       setQuantity(1)
       setJustification('')
-    } catch (error) {
-      console.error('Error submitting request:', error)
-      alert('Failed to submit request. Please try again.')
-    } finally {
-      setIsSubmitting(false)
+    } else {
+      setErrorMessage(result.error || 'Failed to submit request. Please try again.')
     }
+
+    setIsSubmitting(false)
   }
 
   return (
     <>
-      <Card className={`overflow-hidden hover:shadow-lg transition-all ${isUpdated ? 'ring-2 ring-yellow-400 animate-pulse' : ''}`}>
-        <div className="relative h-48 bg-gray-100">
+      <Card className={`group overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${isUpdated ? 'ring-2 ring-yellow-400 animate-pulse' : ''}`}>
+        <div className="relative h-48 bg-gray-100 overflow-hidden">
           {product.image_url && (
             <Image
               src={product.image_url}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-cover transition-transform duration-300 group-hover:scale-110"
             />
           )}
           {isUpdated && (
@@ -103,7 +133,7 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
         </div>
         <CardHeader>
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">{product.name}</CardTitle>
+            <CardTitle className="text-lg group-hover:text-indigo-600 transition-colors">{product.name}</CardTitle>
             <Badge variant="secondary">{product.category}</Badge>
           </div>
           <CardDescription className="line-clamp-2">{product.description}</CardDescription>
@@ -131,8 +161,38 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
             </DialogDescription>
           </DialogHeader>
 
+          {/* Error Alert */}
+          {errorMessage && (
+            <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-600 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">❌</span>
+                <div className="flex-1">
+                  <p className="font-bold text-red-900 dark:text-red-200">Request Failed</p>
+                  <p className="text-sm text-red-800 dark:text-red-300 mt-1">
+                    {errorMessage}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stock Change Alert */}
+          {stockChanged && (
+            <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-600 rounded-lg p-4 animate-pulse">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🚫</span>
+                <div className="flex-1">
+                  <p className="font-bold text-red-900 dark:text-red-200">Out of Stock!</p>
+                  <p className="text-sm text-red-800 dark:text-red-300 mt-1">
+                    This product went out of stock while you were viewing. You cannot submit this request.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Price Change Alert */}
-          {priceChanged && (
+          {priceChanged && !stockChanged && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4 animate-pulse">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">⚠️</span>
@@ -179,10 +239,17 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
                 id="quantity"
                 type="number"
                 min="1"
+                max={maxQuantity}
                 value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 1
+                  setQuantity(Math.min(val, maxQuantity))
+                }}
                 className="text-lg h-12"
               />
+              <p className="text-xs text-gray-500">
+                Maximum {maxQuantity} units for items at this price point
+              </p>
             </div>
 
             {/* Justification */}
@@ -194,13 +261,17 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
                 id="justification"
                 placeholder="Share your reason (e.g., 'My current laptop is 5 years old and can't handle the new dev tools we're using...')"
                 value={justification}
-                onChange={(e) => setJustification(e.target.value)}
+                onChange={(e) => setJustification(e.target.value.slice(0, 500))}
                 rows={4}
                 className="resize-none"
+                maxLength={500}
               />
               <div className="flex items-center justify-between">
                 <p className={`text-xs ${justification.length >= 20 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
                   {justification.length >= 20 ? "✓ Great! You're good to go" : `${justification.length}/20 characters minimum`}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {justification.length}/500 characters
                 </p>
               </div>
             </div>
@@ -232,10 +303,12 @@ export default function ProductCard({ product, onRequest, isUpdated = false }: P
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || justification.length < 20}
-              className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700"
+              disabled={isSubmitting || justification.length < 20 || stockChanged || !product.in_stock}
+              className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400"
             >
-              {isSubmitting ? (
+              {stockChanged || !product.in_stock ? (
+                '🚫 Out of Stock'
+              ) : isSubmitting ? (
                 <>
                   <span className="animate-pulse">Submitting...</span>
                 </>

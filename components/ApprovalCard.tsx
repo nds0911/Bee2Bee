@@ -61,6 +61,19 @@ export default function ApprovalCard({ request }: ApprovalCardProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      // Check if request is still pending before updating
+      const { data: currentRequest, error: checkError } = await supabase
+        .from('purchase_requests')
+        .select('status')
+        .eq('id', request.id)
+        .single()
+
+      if (checkError) throw checkError
+
+      if (currentRequest.status !== 'pending') {
+        throw new Error(`This request has already been ${currentRequest.status}. Another manager may have processed it.`)
+      }
+
       const { error } = await supabase
         .from('purchase_requests')
         .update({
@@ -70,6 +83,7 @@ export default function ApprovalCard({ request }: ApprovalCardProps) {
           updated_at: new Date().toISOString()
         })
         .eq('id', request.id)
+        .eq('status', 'pending') // Only update if still pending
 
       if (error) throw error
 
@@ -86,7 +100,9 @@ export default function ApprovalCard({ request }: ApprovalCardProps) {
       }, 2000)
     } catch (error) {
       console.error('Error updating request:', error)
-      alert('Failed to update request. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update request. Please try again.'
+      alert(errorMessage)
+      router.refresh() // Refresh to show updated state
     } finally {
       setIsProcessing(false)
       setPendingDecision(null)
@@ -151,10 +167,14 @@ export default function ApprovalCard({ request }: ApprovalCardProps) {
               id={`comment-${request.id}`}
               placeholder="Add feedback or conditions for your decision..."
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => setComment(e.target.value.slice(0, 300))}
               rows={3}
               className="resize-none"
+              maxLength={300}
             />
+            <p className="text-xs text-gray-400 text-right">
+              {comment.length}/300 characters
+            </p>
           </div>
         </CardContent>
         <CardFooter className="flex gap-3 bg-gray-50 pt-6">

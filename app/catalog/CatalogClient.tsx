@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import ProductCard from '@/components/ProductCard'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
@@ -54,31 +55,41 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
           if (payload.eventType === 'UPDATE') {
             const updatedProduct = payload.new as Product
             console.log('✏️ Product updated:', updatedProduct)
-            setProducts(prev =>
-              prev.map(p => p.id === updatedProduct.id ? updatedProduct : p)
-            )
-            // Mark product as recently updated
-            setUpdatedProducts(prev => new Set(prev).add(updatedProduct.id))
-            // Remove the badge after 5 seconds
-            setTimeout(() => {
-              setUpdatedProducts(prev => {
-                const next = new Set(prev)
-                next.delete(updatedProduct.id)
-                return next
-              })
-            }, 5000)
+
+            // If product went out of stock, remove it from employee view
+            if (!updatedProduct.in_stock) {
+              console.log('🚫 Product out of stock, removing from catalog')
+              setProducts(prev => prev.filter(p => p.id !== updatedProduct.id))
+            } else {
+              setProducts(prev =>
+                prev.map(p => p.id === updatedProduct.id ? updatedProduct : p)
+              )
+              // Mark product as recently updated
+              setUpdatedProducts(prev => new Set(prev).add(updatedProduct.id))
+              // Remove the badge after 5 seconds
+              setTimeout(() => {
+                setUpdatedProducts(prev => {
+                  const next = new Set(prev)
+                  next.delete(updatedProduct.id)
+                  return next
+                })
+              }, 5000)
+            }
           } else if (payload.eventType === 'INSERT') {
             const newProduct = payload.new as Product
             console.log('➕ Product added:', newProduct)
-            setProducts(prev => [...prev, newProduct])
-            setUpdatedProducts(prev => new Set(prev).add(newProduct.id))
-            setTimeout(() => {
-              setUpdatedProducts(prev => {
-                const next = new Set(prev)
-                next.delete(newProduct.id)
-                return next
-              })
-            }, 5000)
+            // Only add if in stock (employees should only see in-stock products)
+            if (newProduct.in_stock) {
+              setProducts(prev => [...prev, newProduct])
+              setUpdatedProducts(prev => new Set(prev).add(newProduct.id))
+              setTimeout(() => {
+                setUpdatedProducts(prev => {
+                  const next = new Set(prev)
+                  next.delete(newProduct.id)
+                  return next
+                })
+              }, 5000)
+            }
           } else if (payload.eventType === 'DELETE') {
             console.log('🗑️ Product deleted:', payload.old)
             setProducts(prev => prev.filter(p => p.id !== payload.old.id))
@@ -101,6 +112,7 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
               const { data: latestProducts, error } = await supabase
                 .from('it_products')
                 .select('*')
+                .eq('in_stock', true) // Only fetch in-stock products for employees
                 .order('category', { ascending: true })
 
               if (error) {
@@ -226,9 +238,23 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
     return 0
   })
 
-  const handleRequest = async (product: Product, quantity: number, justification: string) => {
+  const handleRequest = async (product: Product, quantity: number, justification: string): Promise<{ success: boolean; error?: string }> => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) return { success: false, error: 'Not authenticated' }
+
+    // Check if product still exists before submitting
+    const { data: productCheck, error: checkError } = await supabase
+      .from('it_products')
+      .select('id, in_stock')
+      .eq('id', product.id)
+      .single()
+
+    if (checkError || !productCheck) {
+      return { success: false, error: 'This product is no longer available. It may have been removed from the catalog.' }
+    }
+
+    // Note: We don't check in_stock here because the UI already prevents submission
+    // if the product goes out of stock (via the red banner and disabled button)
 
     const { error } = await supabase
       .from('purchase_requests')
@@ -242,10 +268,10 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
 
     if (error) {
       console.error('Error creating request:', error)
-      throw error
+      return { success: false, error: 'Failed to submit request. Please try again.' }
     }
 
-    router.push('/requests')
+    return { success: true }
   }
 
   return (

@@ -124,7 +124,7 @@ export default function ManageCatalogClient({ products }: ManageCatalogClientPro
 
     setIsSubmitting(true)
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('it_products')
         .update({
           name: formData.name,
@@ -135,8 +135,12 @@ export default function ManageCatalogClient({ products }: ManageCatalogClientPro
           in_stock: formData.in_stock
         })
         .eq('id', selectedProduct.id)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Update error:', error)
+        throw error
+      }
 
       setIsEditDialogOpen(false)
       setSelectedProduct(null)
@@ -184,14 +188,14 @@ export default function ManageCatalogClient({ products }: ManageCatalogClientPro
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map(product => (
-          <Card key={product.id} className="overflow-hidden">
-            <div className="relative h-48 bg-gray-100">
+          <Card key={product.id} className="group overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]">
+            <div className="relative h-48 bg-gray-100 overflow-hidden">
               {product.image_url && (
                 <Image
                   src={product.image_url}
                   alt={product.name}
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               )}
               {!product.in_stock && (
@@ -202,7 +206,7 @@ export default function ManageCatalogClient({ products }: ManageCatalogClientPro
             </div>
             <CardHeader>
               <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{product.name}</CardTitle>
+                <CardTitle className="text-lg group-hover:text-indigo-600 transition-colors">{product.name}</CardTitle>
                 <Badge variant="secondary">{product.category}</Badge>
               </div>
             </CardHeader>

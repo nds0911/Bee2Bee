@@ -78,6 +78,12 @@ export default function Navbar() {
                     Manage Catalog
                   </Link>
                   <Link
+                    href="/admin/users"
+                    className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Users
+                  </Link>
+                  <Link
                     href="/admin"
                     className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium"
                   >
