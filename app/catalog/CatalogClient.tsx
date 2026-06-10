@@ -98,36 +98,60 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
 
             pollInterval = setInterval(async () => {
               console.log('🔄 Polling for product updates...')
-              const { data: latestProducts } = await supabase
+              const { data: latestProducts, error } = await supabase
                 .from('it_products')
                 .select('*')
-                .eq('in_stock', true)
                 .order('category', { ascending: true })
 
+              if (error) {
+                console.error('❌ Polling error:', error)
+                return
+              }
+
               if (latestProducts) {
+                console.log('📦 Fetched products:', latestProducts.length)
+
                 setProducts(prevProducts => {
                   // Check for changes
                   const changedProducts = latestProducts.filter(latest => {
                     const prev = prevProducts.find(p => p.id === latest.id)
-                    return prev && (
+                    if (!prev) {
+                      console.log('➕ New product detected:', latest.name)
+                      return true
+                    }
+
+                    const hasChanged =
                       prev.price !== latest.price ||
                       prev.name !== latest.name ||
-                      prev.in_stock !== latest.in_stock
-                    )
+                      prev.in_stock !== latest.in_stock ||
+                      prev.description !== latest.description
+
+                    if (hasChanged) {
+                      console.log('🔄 Change detected:', {
+                        product: latest.name,
+                        oldPrice: prev.price,
+                        newPrice: latest.price,
+                        priceChanged: prev.price !== latest.price
+                      })
+                    }
+
+                    return hasChanged
                   })
 
                   // Mark changed products
-                  changedProducts.forEach(changed => {
-                    console.log('🔄 Product changed via polling:', changed)
-                    setUpdatedProducts(prev => new Set(prev).add(changed.id))
-                    setTimeout(() => {
-                      setUpdatedProducts(prev => {
-                        const next = new Set(prev)
-                        next.delete(changed.id)
-                        return next
-                      })
-                    }, 5000)
-                  })
+                  if (changedProducts.length > 0) {
+                    console.log(`✨ ${changedProducts.length} product(s) updated`)
+                    changedProducts.forEach(changed => {
+                      setUpdatedProducts(prev => new Set(prev).add(changed.id))
+                      setTimeout(() => {
+                        setUpdatedProducts(prev => {
+                          const next = new Set(prev)
+                          next.delete(changed.id)
+                          return next
+                        })
+                      }, 5000)
+                    })
+                  }
 
                   return latestProducts
                 })
