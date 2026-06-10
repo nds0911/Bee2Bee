@@ -257,7 +257,7 @@ export default function ManageCatalogClient({ products }: ManageCatalogClientPro
               <Label htmlFor="category">Category *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={(value) => setFormData({ ...formData, category: value || '' })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
@@ -343,7 +343,7 @@ export default function ManageCatalogClient({ products }: ManageCatalogClientPro
               <Label htmlFor="edit-category">Category *</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={(value) => setFormData({ ...formData, category: value || '' })}
               >
                 <SelectTrigger>
                   <SelectValue />

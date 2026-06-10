@@ -338,7 +338,7 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
             >
               🔄 Refresh
             </Button>
-            <Select value={priceFilter} onValueChange={setPriceFilter}>
+            <Select value={priceFilter} onValueChange={(value) => setPriceFilter(value || 'all')}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Price Range" />
               </SelectTrigger>
@@ -350,7 +350,7 @@ export default function CatalogClient({ products: initialProducts }: CatalogClie
                 <SelectItem value="over2000">Over $2,000</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value || 'name')}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>

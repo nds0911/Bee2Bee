@@ -18,6 +18,7 @@ interface ApprovalCardProps {
     justification: string
     status: string
     created_at: string
+    manager_comment?: string | null
     it_products: {
       name: string
       category: string

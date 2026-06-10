@@ -9,6 +9,11 @@ import { useRouter } from 'next/navigation'
 export default function LoginPage() {
   const [supabase] = useState(() => createClient())
   const router = useRouter()
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   useEffect(() => {
     const {
@@ -34,7 +39,7 @@ export default function LoginPage() {
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
           providers={[]}
-          redirectTo={`${window.location.origin}/api/auth/callback`}
+          redirectTo={origin ? `${origin}/api/auth/callback` : undefined}
         />
         <div className="mt-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-md">
           <p className="text-sm text-gray-700 dark:text-gray-200 font-semibold mb-2">Test Accounts:</p>
