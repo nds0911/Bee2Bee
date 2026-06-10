@@ -49,7 +49,7 @@ export default function CatalogClient({ products }: CatalogClientProps) {
       throw error
     }
 
-    alert('Request submitted successfully!')
+    // Success is now handled by ProductCard's success dialog
     router.push('/requests')
   }
 
