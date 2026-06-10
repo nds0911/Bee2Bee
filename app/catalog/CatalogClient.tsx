@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ProductCard from '@/components/ProductCard'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -21,13 +22,65 @@ interface CatalogClientProps {
   products: Product[]
 }
 
-export default function CatalogClient({ products }: CatalogClientProps) {
+export default function CatalogClient({ products: initialProducts }: CatalogClientProps) {
+  const [products, setProducts] = useState<Product[]>(initialProducts)
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [priceFilter, setPriceFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('name')
+  const [updatedProducts, setUpdatedProducts] = useState<Set<string>>(new Set())
   const supabase = createClient()
   const router = useRouter()
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('catalog-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'it_products'
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const updatedProduct = payload.new as Product
+            setProducts(prev =>
+              prev.map(p => p.id === updatedProduct.id ? updatedProduct : p)
+            )
+            // Mark product as recently updated
+            setUpdatedProducts(prev => new Set(prev).add(updatedProduct.id))
+            // Remove the badge after 5 seconds
+            setTimeout(() => {
+              setUpdatedProducts(prev => {
+                const next = new Set(prev)
+                next.delete(updatedProduct.id)
+                return next
+              })
+            }, 5000)
+          } else if (payload.eventType === 'INSERT') {
+            const newProduct = payload.new as Product
+            setProducts(prev => [...prev, newProduct])
+            setUpdatedProducts(prev => new Set(prev).add(newProduct.id))
+            setTimeout(() => {
+              setUpdatedProducts(prev => {
+                const next = new Set(prev)
+                next.delete(newProduct.id)
+                return next
+              })
+            }, 5000)
+          } else if (payload.eventType === 'DELETE') {
+            setProducts(prev => prev.filter(p => p.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase])
 
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))]
 
@@ -185,7 +238,12 @@ export default function CatalogClient({ products }: CatalogClientProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map(product => (
-            <ProductCard key={product.id} product={product} onRequest={handleRequest} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              onRequest={handleRequest}
+              isUpdated={updatedProducts.has(product.id)}
+            />
           ))}
         </div>
       )}

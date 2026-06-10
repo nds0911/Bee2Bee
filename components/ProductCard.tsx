@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,18 +23,46 @@ interface Product {
 interface ProductCardProps {
   product: Product
   onRequest: (product: Product, quantity: number, justification: string) => Promise<void>
+  isUpdated?: boolean
 }
 
-export default function ProductCard({ product, onRequest }: ProductCardProps) {
+export default function ProductCard({ product, onRequest, isUpdated = false }: ProductCardProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const [justification, setJustification] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [initialPrice, setInitialPrice] = useState(product.price)
+  const [priceChanged, setPriceChanged] = useState(false)
+
+  // Track when modal opens and detect price changes
+  useEffect(() => {
+    if (isOpen) {
+      setInitialPrice(product.price)
+      setPriceChanged(false)
+    }
+  }, [isOpen, product.price])
+
+  // Detect price change while modal is open
+  useEffect(() => {
+    if (isOpen && initialPrice !== product.price) {
+      setPriceChanged(true)
+    }
+  }, [product.price, initialPrice, isOpen])
 
   const handleSubmit = async () => {
     if (quantity < 1 || justification.length < 20) {
       return
+    }
+
+    // Warn if price changed
+    if (priceChanged) {
+      const confirmed = confirm(
+        `⚠️ Price Update Alert!\n\nThe price has changed from $${initialPrice.toLocaleString()} to $${product.price.toLocaleString()}.\n\nNew total: $${(product.price * quantity).toLocaleString()}\n\nDo you want to proceed with the updated price?`
+      )
+      if (!confirmed) {
+        return
+      }
     }
 
     setIsSubmitting(true)
@@ -57,7 +85,7 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
 
   return (
     <>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+      <Card className={`overflow-hidden hover:shadow-lg transition-all ${isUpdated ? 'ring-2 ring-yellow-400 animate-pulse' : ''}`}>
         <div className="relative h-48 bg-gray-100">
           {product.image_url && (
             <Image
@@ -66,6 +94,11 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
               fill
               className="object-cover"
             />
+          )}
+          {isUpdated && (
+            <div className="absolute top-2 left-2">
+              <Badge className="bg-yellow-500 text-white">🔄 Updated</Badge>
+            </div>
           )}
         </div>
         <CardHeader>
@@ -98,8 +131,24 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Price Change Alert */}
+          {priceChanged && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4 animate-pulse">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div className="flex-1">
+                  <p className="font-bold text-yellow-900 dark:text-yellow-200">Price Updated!</p>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
+                    The price changed from <span className="line-through">${initialPrice.toLocaleString()}</span> to{' '}
+                    <span className="font-bold">${product.price.toLocaleString()}</span> while you were viewing
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Product Preview */}
-          <div className="flex items-center gap-4 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-100">
+          <div className="flex items-center gap-4 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950 dark:to-blue-950 rounded-lg border border-indigo-100 dark:border-indigo-800">
             {product.image_url && (
               <div className="relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 shadow-sm">
                 <Image
@@ -111,9 +160,12 @@ export default function ProductCard({ product, onRequest }: ProductCardProps) {
               </div>
             )}
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{product.name}</h3>
-              <p className="text-sm text-gray-600">{product.category}</p>
-              <p className="text-lg font-bold text-indigo-600 mt-1">${product.price.toLocaleString()} each</p>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{product.name}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{product.category}</p>
+              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-1">
+                ${product.price.toLocaleString()} each
+                {priceChanged && <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">(Updated)</span>}
+              </p>
             </div>
           </div>
 
